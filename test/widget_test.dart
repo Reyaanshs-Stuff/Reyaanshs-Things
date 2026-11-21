@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -32,10 +33,7 @@ void main() {
     expect(find.text('Enter a display name.'), findsOneWidget);
     expect(find.text('Enter a profile picture URL.'), findsOneWidget);
 
-    await tester.enterText(
-      find.byKey(const Key('display-name')),
-      'Reyaansh',
-    );
+    await tester.enterText(find.byKey(const Key('display-name')), 'Reyaansh');
     await tester.enterText(
       find.byKey(const Key('profile-picture-url')),
       'https://example.com/profile.png',
@@ -48,13 +46,53 @@ void main() {
     await tester.tap(find.text('Start Using The App'));
     await tester.pumpAndSettle();
 
-    expect(find.text('This Page Is Work In Progress :>'), findsOneWidget);
-    expect(find.text('My Profile'), findsOneWidget);
+    expect(find.text("Welcome To Reyaansh's Things :>"), findsOneWidget);
+    expect(find.text('This Page Is Work In Progress :>'), findsNothing);
     expect(find.text('Reyaansh'), findsOneWidget);
+    final homeAvatar = find.byKey(const Key('home-profile-avatar'));
+    expect(homeAvatar, findsOneWidget);
+    expect(tester.getTopRight(homeAvatar).dx, greaterThan(300));
+
+    final welcomeCard = find.byKey(const Key('home-welcome-card'));
+    final welcomeTitle = find.byKey(const Key('home-welcome-title'));
+    expect(
+      tester.getTopLeft(homeAvatar).dy,
+      lessThan(tester.getTopLeft(welcomeTitle).dy),
+    );
+    final transparentCard = tester.widget<Card>(
+      find.descendant(of: welcomeCard, matching: find.byType(Card)),
+    );
+    expect(transparentCard.color, Colors.transparent);
+    expect(transparentCard.elevation, 0);
+
+    final titleMouse = await tester.createGesture(
+      kind: PointerDeviceKind.mouse,
+    );
+    await titleMouse.addPointer(location: tester.getCenter(welcomeTitle));
+    await titleMouse.moveTo(tester.getCenter(welcomeTitle));
+    await tester.pump(const Duration(milliseconds: 350));
+    final appTheme = tester.widget<MaterialApp>(find.byType(MaterialApp)).theme;
+    expect(
+      tester.widget<AnimatedDefaultTextStyle>(welcomeTitle).style.color,
+      appTheme!.colorScheme.primary,
+    );
+    await titleMouse.removePointer();
+
+    final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await mouse.addPointer(location: tester.getCenter(welcomeCard));
+    await mouse.moveTo(tester.getCenter(welcomeCard));
+    await tester.pump(const Duration(milliseconds: 350));
+    final hoveredDecoration =
+        tester.widget<AnimatedContainer>(welcomeCard).decoration!
+            as BoxDecoration;
+    expect(hoveredDecoration.boxShadow!.single.blurRadius, 40);
+    await mouse.removePointer();
 
     await tester.tap(find.byTooltip('Open sidebar'));
     await tester.pumpAndSettle();
     expect(find.byTooltip('Collapse sidebar'), findsOneWidget);
+    expect(find.byKey(const Key('sidebar-profile')), findsOneWidget);
+    expect(find.text('My Profile'), findsOneWidget);
 
     await tester.tap(find.byTooltip('Collapse sidebar'));
     await tester.pumpAndSettle();
@@ -68,9 +106,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byTooltip('Collapse sidebar'), findsOneWidget);
 
+    await tester.pumpWidget(const SizedBox.shrink());
     await tester.pumpWidget(const MyApp());
     await tester.pumpAndSettle();
-    expect(find.text('This Page Is Work In Progress :>'), findsOneWidget);
+    expect(find.text("Welcome To Reyaansh's Things :>"), findsOneWidget);
     expect(find.text('Reyaansh'), findsOneWidget);
   });
 }

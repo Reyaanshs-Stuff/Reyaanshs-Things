@@ -55,6 +55,7 @@ class _HomePageState extends State<HomePage> {
                     Expanded(
                       child: _HomeContent(
                         isWide: isWide,
+                        profile: widget.profile,
                       ),
                     ),
                   ],
@@ -97,9 +98,7 @@ class _ProfileSidebarState extends State<_ProfileSidebar> {
       width: width,
       decoration: BoxDecoration(
         color: colors.surfaceContainerLow.withValues(alpha: 0.96),
-        border: Border(
-          right: BorderSide(color: colors.outlineVariant),
-        ),
+        border: Border(right: BorderSide(color: colors.outlineVariant)),
       ),
       child: Column(
         children: [
@@ -181,9 +180,7 @@ class _ProfileSidebarState extends State<_ProfileSidebar> {
                             children: [
                               Text(
                                 'My Profile',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .labelMedium
+                                style: Theme.of(context).textTheme.labelMedium
                                     ?.copyWith(color: colors.onSurfaceVariant),
                               ),
                               const SizedBox(height: 3),
@@ -191,9 +188,7 @@ class _ProfileSidebarState extends State<_ProfileSidebar> {
                                 widget.profile.displayName,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleSmall
+                                style: Theme.of(context).textTheme.titleSmall
                                     ?.copyWith(fontWeight: FontWeight.w600),
                               ),
                             ],
@@ -213,128 +208,99 @@ class _ProfileSidebarState extends State<_ProfileSidebar> {
 }
 
 class _HomeContent extends StatefulWidget {
-  const _HomeContent({required this.isWide});
+  const _HomeContent({required this.isWide, required this.profile});
 
   final bool isWide;
+  final AppProfile profile;
 
   @override
   State<_HomeContent> createState() => _HomeContentState();
 }
 
 class _HomeContentState extends State<_HomeContent> {
-  bool _isWorkCardHovered = false;
+  bool _isWelcomeHovered = false;
+  bool _isProfileHovered = false;
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
 
     return Column(
       children: [
-        if (!widget.isWide)
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Builder(
-              builder: (context) => Padding(
-                padding: const EdgeInsets.all(8),
-                child: IconButton(
-                  tooltip: 'Open sidebar',
-                  onPressed: () => Scaffold.of(context).openDrawer(),
-                  icon: const Icon(Icons.menu_rounded),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 24, 8),
+          child: Row(
+            children: [
+              if (!widget.isWide)
+                Builder(
+                  builder: (context) => IconButton(
+                    tooltip: 'Open sidebar',
+                    onPressed: () => Scaffold.of(context).openDrawer(),
+                    icon: const Icon(Icons.menu_rounded),
+                  ),
                 ),
-              ),
-            ),
-          ),
-        Expanded(
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 720),
+              Expanded(
                 child: MouseRegion(
-                  onEnter: (_) => setState(() => _isWorkCardHovered = true),
-                  onExit: (_) => setState(() => _isWorkCardHovered = false),
+                  onEnter: (_) => setState(() => _isWelcomeHovered = true),
+                  onExit: (_) => setState(() => _isWelcomeHovered = false),
                   child: AnimatedContainer(
-                    key: const Key('home-work-card'),
+                    key: const Key('home-welcome-card'),
                     duration: const Duration(milliseconds: 320),
                     curve: Curves.easeOutCubic,
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(32),
-                      boxShadow: [
-                        BoxShadow(
-                          color: colors.primary.withValues(
-                            alpha: _isWorkCardHovered ? 0.18 : 0.05,
-                          ),
-                          blurRadius: _isWorkCardHovered ? 40 : 20,
-                          offset: Offset(0, _isWorkCardHovered ? 16 : 8),
-                        ),
-                      ],
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: _isWelcomeHovered
+                          ? [
+                              BoxShadow(
+                                color: colors.primary.withValues(alpha: 0.18),
+                                blurRadius: 28,
+                                offset: const Offset(0, 6),
+                              ),
+                            ]
+                          : const [],
                     ),
                     child: AnimatedScale(
-                      scale: _isWorkCardHovered ? 1.015 : 1,
+                      scale: _isWelcomeHovered ? 1.015 : 1,
                       duration: const Duration(milliseconds: 320),
                       curve: Curves.easeOutCubic,
                       child: Card(
-                        color: colors.surfaceContainerLow.withValues(
-                          alpha: 0.94,
-                        ),
-                        elevation: _isWorkCardHovered ? 6 : 1,
+                        color: Colors.transparent,
+                        surfaceTintColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        elevation: 0,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(32),
-                          side: BorderSide(
-                            color: _isWorkCardHovered
-                                ? colors.primary.withValues(alpha: 0.4)
-                                : colors.outlineVariant,
-                          ),
+                          borderRadius: BorderRadius.circular(20),
+                          side: BorderSide.none,
                         ),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 32,
-                            vertical: 48,
+                            horizontal: 8,
+                            vertical: 8,
                           ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              AnimatedContainer(
-                                duration: const Duration(milliseconds: 320),
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: AnimatedScale(
+                              key: const Key('home-welcome-title'),
+                              scale: _isWelcomeHovered ? 1.025 : 1,
+                              duration: const Duration(milliseconds: 320),
+                              curve: Curves.easeOutCubic,
+                              child: AnimatedDefaultTextStyle(
+                                duration: const Duration(milliseconds: 280),
                                 curve: Curves.easeOutCubic,
-                                width: 88,
-                                height: 88,
-                                decoration: BoxDecoration(
-                                  color: colors.primaryContainer.withValues(
-                                    alpha: _isWorkCardHovered ? 0.9 : 0.55,
-                                  ),
-                                  shape: BoxShape.circle,
+                                style: textTheme.titleLarge!.copyWith(
+                                  color: _isWelcomeHovered
+                                      ? colors.primary
+                                      : colors.onSurface,
+                                  fontWeight: FontWeight.w700,
                                 ),
-                                child: Center(
-                                  child: AnimatedRotation(
-                                    turns: _isWorkCardHovered ? 0.035 : 0,
-                                    duration: const Duration(milliseconds: 420),
-                                    curve: Curves.easeOutCubic,
-                                    child: AnimatedScale(
-                                      scale: _isWorkCardHovered ? 1.12 : 1,
-                                      duration: const Duration(
-                                        milliseconds: 320,
-                                      ),
-                                      curve: Curves.easeOutCubic,
-                                      child: Icon(
-                                        Icons.construction_rounded,
-                                        size: 44,
-                                        color: colors.primary,
-                                      ),
-                                    ),
-                                  ),
+                                child: const Text(
+                                  "Welcome To Reyaansh's Things :>",
+                                  maxLines: 1,
+                                  textAlign: TextAlign.center,
                                 ),
                               ),
-                              const SizedBox(height: 24),
-                              Text(
-                                'This Page Is Work In Progress :>',
-                                textAlign: TextAlign.center,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .headlineSmall
-                                    ?.copyWith(fontWeight: FontWeight.w700),
-                              ),
-                            ],
+                            ),
                           ),
                         ),
                       ),
@@ -342,19 +308,52 @@ class _HomeContentState extends State<_HomeContent> {
                   ),
                 ),
               ),
-            ),
+              const SizedBox(width: 12),
+              MouseRegion(
+                onEnter: (_) => setState(() => _isProfileHovered = true),
+                onExit: (_) => setState(() => _isProfileHovered = false),
+                child: Tooltip(
+                  message: 'My Profile',
+                  child: AnimatedContainer(
+                    key: const Key('home-profile-avatar'),
+                    duration: const Duration(milliseconds: 260),
+                    curve: Curves.easeOutCubic,
+                    padding: const EdgeInsets.all(3),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: _isProfileHovered
+                          ? [
+                              BoxShadow(
+                                color: colors.primary.withValues(alpha: 0.24),
+                                blurRadius: 18,
+                                offset: const Offset(0, 4),
+                              ),
+                            ]
+                          : const [],
+                    ),
+                    child: AnimatedScale(
+                      scale: _isProfileHovered ? 1.1 : 1,
+                      duration: const Duration(milliseconds: 260),
+                      curve: Curves.easeOutCubic,
+                      child: _ProfileAvatar(
+                        pictureUrl: widget.profile.profilePictureUrl,
+                        radius: 24,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
+        const Expanded(child: SizedBox.shrink()),
       ],
     );
   }
 }
 
 class _ProfileAvatar extends StatelessWidget {
-  const _ProfileAvatar({
-    required this.pictureUrl,
-    required this.radius,
-  });
+  const _ProfileAvatar({required this.pictureUrl, required this.radius});
 
   final String pictureUrl;
   final double radius;
