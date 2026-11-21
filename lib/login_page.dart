@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+  const LoginPage({required this.onStartUsing, super.key});
+
+  final Future<void> Function(
+    String displayName,
+    String profilePictureUrl,
+  ) onStartUsing;
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -16,6 +21,7 @@ class _LoginPageState extends State<LoginPage> {
   bool _isProfilePictureHovered = false;
   bool _isStartButtonHovered = false;
   bool _isCardHovered = false;
+  bool _isSaving = false;
 
   @override
   void dispose() {
@@ -52,8 +58,9 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  void _startUsing() {
-    final hasDisplayName = _displayNameController.text.trim().isNotEmpty;
+  Future<void> _startUsing() async {
+    final displayName = _displayNameController.text.trim();
+    final hasDisplayName = displayName.isNotEmpty;
     final pictureUrl = _profilePictureUrlController.text.trim();
     final hasProfilePicture = _isValidPictureUrl(pictureUrl);
 
@@ -67,8 +74,25 @@ class _LoginPageState extends State<LoginPage> {
               : 'Enter a valid image URL.';
     });
 
-    if (hasDisplayName && hasProfilePicture) {
-      _showMessage('Home Page Comming Soon!');
+    if (!hasDisplayName || !hasProfilePicture) {
+      return;
+    }
+
+    setState(() {
+      _isSaving = true;
+    });
+    try {
+      await widget.onStartUsing(displayName, pictureUrl);
+    } on Exception catch (error) {
+      if (mounted) {
+        _showMessage('Could not save your profile: $error');
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
     }
   }
 
@@ -168,6 +192,7 @@ class _LoginPageState extends State<LoginPage> {
                             displayNameController: _displayNameController,
                             displayNameError: _displayNameError,
                             profilePictureError: _profilePictureError,
+                            isSaving: _isSaving,
                             isPictureHovered: _isProfilePictureHovered,
                             isStartButtonHovered: _isStartButtonHovered,
                             isCardHovered: _isCardHovered,
@@ -207,6 +232,7 @@ class _ProfileCard extends StatelessWidget {
     required this.displayNameController,
     required this.displayNameError,
     required this.profilePictureError,
+    required this.isSaving,
     required this.isPictureHovered,
     required this.isStartButtonHovered,
     required this.isCardHovered,
@@ -223,6 +249,7 @@ class _ProfileCard extends StatelessWidget {
   final TextEditingController displayNameController;
   final String? displayNameError;
   final String? profilePictureError;
+  final bool isSaving;
   final bool isPictureHovered;
   final bool isStartButtonHovered;
   final bool isCardHovered;
@@ -413,12 +440,20 @@ class _ProfileCard extends StatelessWidget {
                   onEnter: (_) => onStartButtonHover(true),
                   onExit: (_) => onStartButtonHover(false),
                   child: AnimatedScale(
-                    scale: isStartButtonHovered ? 1.015 : 1,
+                    scale: isStartButtonHovered && !isSaving ? 1.015 : 1,
                     duration: const Duration(milliseconds: 160),
                     curve: Curves.easeOutCubic,
                     child: FilledButton.icon(
-                      onPressed: onStartUsing,
-                      icon: const Icon(Icons.arrow_forward_rounded),
+                      onPressed: isSaving ? null : onStartUsing,
+                      icon: isSaving
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Icon(Icons.arrow_forward_rounded),
                       label: const Text('Start Using The App'),
                       style: FilledButton.styleFrom(
                         minimumSize: const Size.fromHeight(54),
