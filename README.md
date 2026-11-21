@@ -30,12 +30,6 @@ Here's a look at the application.
       <b>Login Screen</b>
     </td>
   </tr>
-  <tr>
-    <td width="50%" align="center">
-      <img src="screenshots/home.png" alt="Home Screen" width="100%">
-      <b>Home Screen</b>
-    </td>
-  </tr>
 </table>
 
 ## 📦 Downloads
