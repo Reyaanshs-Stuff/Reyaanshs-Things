@@ -89,7 +89,8 @@ Reyaanshs-Things/
 ├── windows/
 ├── lib/
 ├── screenshots/
-│   └── login.png
+│   ├── login.png
+│   └── home.png
 ├── test/
 └── pubspec.yaml
 ```
