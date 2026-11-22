@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'app_profile.dart';
+import 'profile_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({required this.profile, super.key});
@@ -13,10 +14,23 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   bool _isSidebarCollapsed = false;
+  bool _showProfilePage = false;
 
   void _toggleSidebar() {
     setState(() {
       _isSidebarCollapsed = !_isSidebarCollapsed;
+    });
+  }
+
+  void _openProfile() {
+    setState(() {
+      _showProfilePage = true;
+    });
+  }
+
+  void _closeProfile() {
+    setState(() {
+      _showProfilePage = false;
     });
   }
 
@@ -37,6 +51,14 @@ class _HomePageState extends State<HomePage> {
                       profile: widget.profile,
                       isCollapsed: _isSidebarCollapsed,
                       onToggle: _toggleSidebar,
+                      onHomeSelected: () {
+                        Navigator.of(context).pop();
+                        _closeProfile();
+                      },
+                      onProfileSelected: () {
+                        Navigator.of(context).pop();
+                        _openProfile();
+                      },
                     ),
                   ),
                 ),
@@ -51,12 +73,21 @@ class _HomePageState extends State<HomePage> {
                         profile: widget.profile,
                         isCollapsed: _isSidebarCollapsed,
                         onToggle: _toggleSidebar,
+                        onHomeSelected: _closeProfile,
+                        onProfileSelected: _openProfile,
                       ),
                     Expanded(
-                      child: _HomeContent(
-                        isWide: isWide,
-                        profile: widget.profile,
-                      ),
+                      child: _showProfilePage
+                          ? ProfilePage(
+                              profile: widget.profile,
+                              isWide: isWide,
+                              onBack: _closeProfile,
+                            )
+                          : _HomeContent(
+                              isWide: isWide,
+                              profile: widget.profile,
+                              onProfileSelected: _openProfile,
+                            ),
                     ),
                   ],
                 ),
@@ -74,11 +105,15 @@ class _ProfileSidebar extends StatefulWidget {
     required this.profile,
     required this.isCollapsed,
     required this.onToggle,
+    required this.onHomeSelected,
+    required this.onProfileSelected,
   });
 
   final AppProfile profile;
   final bool isCollapsed;
   final VoidCallback onToggle;
+  final VoidCallback onHomeSelected;
+  final VoidCallback onProfileSelected;
 
   @override
   State<_ProfileSidebar> createState() => _ProfileSidebarState();
@@ -86,6 +121,7 @@ class _ProfileSidebar extends StatefulWidget {
 
 class _ProfileSidebarState extends State<_ProfileSidebar> {
   bool _isProfileHovered = false;
+  bool _isHomeHovered = false;
 
   @override
   Widget build(BuildContext context) {
@@ -122,6 +158,65 @@ class _ProfileSidebarState extends State<_ProfileSidebar> {
               ),
             ),
           ),
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              widget.isCollapsed ? 8 : 16,
+              0,
+              widget.isCollapsed ? 8 : 16,
+              8,
+            ),
+            child: MouseRegion(
+              onEnter: (_) => setState(() => _isHomeHovered = true),
+              onExit: (_) => setState(() => _isHomeHovered = false),
+              child: Tooltip(
+                message: 'Home',
+                child: InkWell(
+                  key: const Key('sidebar-home'),
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: widget.onHomeSelected,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 260),
+                    curve: Curves.easeOutCubic,
+                    height: 48,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: widget.isCollapsed ? 8 : 14,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _isHomeHovered
+                          ? colors.primaryContainer.withValues(alpha: 0.8)
+                          : colors.primaryContainer.withValues(alpha: 0.35),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: widget.isCollapsed
+                          ? MainAxisAlignment.center
+                          : MainAxisAlignment.start,
+                      children: [
+                        AnimatedScale(
+                          scale: _isHomeHovered ? 1.1 : 1,
+                          duration: const Duration(milliseconds: 260),
+                          child: Icon(
+                            Icons.home_rounded,
+                            color: _isHomeHovered
+                                ? colors.primary
+                                : colors.onSurfaceVariant,
+                          ),
+                        ),
+                        if (!widget.isCollapsed) ...[
+                          const SizedBox(width: 12),
+                          Text(
+                            'Home',
+                            style: Theme.of(context).textTheme.titleSmall
+                                ?.copyWith(fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
           const Spacer(),
           Padding(
             padding: EdgeInsets.fromLTRB(
@@ -137,65 +232,71 @@ class _ProfileSidebarState extends State<_ProfileSidebar> {
                 message: widget.isCollapsed
                     ? 'My Profile: ${widget.profile.displayName}'
                     : 'My Profile',
-                child: AnimatedContainer(
+                child: InkWell(
                   key: const Key('sidebar-profile'),
-                  duration: const Duration(milliseconds: 260),
-                  curve: Curves.easeOutCubic,
-                  padding: EdgeInsets.all(widget.isCollapsed ? 8 : 12),
-                  decoration: BoxDecoration(
-                    color: _isProfileHovered
-                        ? colors.primaryContainer.withValues(alpha: 0.8)
-                        : colors.primaryContainer.withValues(alpha: 0.45),
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: _isProfileHovered
-                        ? [
-                            BoxShadow(
-                              color: colors.primary.withValues(alpha: 0.12),
-                              blurRadius: 18,
-                              offset: const Offset(0, 6),
-                            ),
-                          ]
-                        : const [],
-                  ),
-                  child: Row(
-                    mainAxisAlignment: widget.isCollapsed
-                        ? MainAxisAlignment.center
-                        : MainAxisAlignment.start,
-                    children: [
-                      AnimatedScale(
-                        scale: _isProfileHovered ? 1.08 : 1,
-                        duration: const Duration(milliseconds: 260),
-                        curve: Curves.easeOutCubic,
-                        child: _ProfileAvatar(
-                          pictureUrl: widget.profile.profilePictureUrl,
-                          radius: 24,
-                        ),
-                      ),
-                      if (!widget.isCollapsed) ...[
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                'My Profile',
-                                style: Theme.of(context).textTheme.labelMedium
-                                    ?.copyWith(color: colors.onSurfaceVariant),
+                  borderRadius: BorderRadius.circular(20),
+                  onTap: widget.onProfileSelected,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 260),
+                    curve: Curves.easeOutCubic,
+                    padding: EdgeInsets.all(widget.isCollapsed ? 8 : 12),
+                    decoration: BoxDecoration(
+                      color: _isProfileHovered
+                          ? colors.primaryContainer.withValues(alpha: 0.8)
+                          : colors.primaryContainer.withValues(alpha: 0.45),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: _isProfileHovered
+                          ? [
+                              BoxShadow(
+                                color: colors.primary.withValues(alpha: 0.12),
+                                blurRadius: 18,
+                                offset: const Offset(0, 6),
                               ),
-                              const SizedBox(height: 3),
-                              Text(
-                                widget.profile.displayName,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: Theme.of(context).textTheme.titleSmall
-                                    ?.copyWith(fontWeight: FontWeight.w600),
-                              ),
-                            ],
+                            ]
+                          : const [],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: widget.isCollapsed
+                          ? MainAxisAlignment.center
+                          : MainAxisAlignment.start,
+                      children: [
+                        AnimatedScale(
+                          scale: _isProfileHovered ? 1.08 : 1,
+                          duration: const Duration(milliseconds: 260),
+                          curve: Curves.easeOutCubic,
+                          child: _ProfileAvatar(
+                            pictureUrl: widget.profile.profilePictureUrl,
+                            radius: 24,
                           ),
                         ),
+                        if (!widget.isCollapsed) ...[
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'My Profile',
+                                  style: Theme.of(context).textTheme.labelMedium
+                                      ?.copyWith(
+                                        color: colors.onSurfaceVariant,
+                                      ),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  widget.profile.displayName,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: Theme.of(context).textTheme.titleSmall
+                                      ?.copyWith(fontWeight: FontWeight.w600),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
                 ),
               ),
@@ -208,10 +309,15 @@ class _ProfileSidebarState extends State<_ProfileSidebar> {
 }
 
 class _HomeContent extends StatefulWidget {
-  const _HomeContent({required this.isWide, required this.profile});
+  const _HomeContent({
+    required this.isWide,
+    required this.profile,
+    required this.onProfileSelected,
+  });
 
   final bool isWide;
   final AppProfile profile;
+  final VoidCallback onProfileSelected;
 
   @override
   State<_HomeContent> createState() => _HomeContentState();
@@ -314,30 +420,34 @@ class _HomeContentState extends State<_HomeContent> {
                 onExit: (_) => setState(() => _isProfileHovered = false),
                 child: Tooltip(
                   message: 'My Profile',
-                  child: AnimatedContainer(
+                  child: InkWell(
                     key: const Key('home-profile-avatar'),
-                    duration: const Duration(milliseconds: 260),
-                    curve: Curves.easeOutCubic,
-                    padding: const EdgeInsets.all(3),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      boxShadow: _isProfileHovered
-                          ? [
-                              BoxShadow(
-                                color: colors.primary.withValues(alpha: 0.24),
-                                blurRadius: 18,
-                                offset: const Offset(0, 4),
-                              ),
-                            ]
-                          : const [],
-                    ),
-                    child: AnimatedScale(
-                      scale: _isProfileHovered ? 1.1 : 1,
+                    borderRadius: BorderRadius.circular(30),
+                    onTap: widget.onProfileSelected,
+                    child: AnimatedContainer(
                       duration: const Duration(milliseconds: 260),
                       curve: Curves.easeOutCubic,
-                      child: _ProfileAvatar(
-                        pictureUrl: widget.profile.profilePictureUrl,
-                        radius: 24,
+                      padding: const EdgeInsets.all(3),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        boxShadow: _isProfileHovered
+                            ? [
+                                BoxShadow(
+                                  color: colors.primary.withValues(alpha: 0.24),
+                                  blurRadius: 18,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ]
+                            : const [],
+                      ),
+                      child: AnimatedScale(
+                        scale: _isProfileHovered ? 1.1 : 1,
+                        duration: const Duration(milliseconds: 260),
+                        curve: Curves.easeOutCubic,
+                        child: _ProfileAvatar(
+                          pictureUrl: widget.profile.profilePictureUrl,
+                          radius: 24,
+                        ),
                       ),
                     ),
                   ),
