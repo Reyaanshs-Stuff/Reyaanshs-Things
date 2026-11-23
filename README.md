@@ -65,27 +65,9 @@ flutter pub get
 flutter run
 ```
 
-### Supabase setup
+## 🖥 Supabase
 
-Authentication and messaging require a Supabase project.
-
-1. Create a project at [supabase.com](https://supabase.com/).
-2. In the project's SQL Editor, run [`supabase/schema.sql`](supabase/schema.sql) once. It creates the profile, global chat, private-channel, invitation, message, reaction, and storage policies.
-3. Enable Email authentication in **Authentication → Providers**. Email confirmation is recommended; users will need to confirm new accounts before signing in.
-4. Copy the project URL and the public anon/publishable key from **Project Settings → API**.
-5. Run the app with those values:
-
-```bash
-flutter run \
-  --dart-define=SUPABASE_URL=https://YOUR_PROJECT.supabase.co \
-  --dart-define=SUPABASE_ANON_KEY=YOUR_PUBLIC_ANON_KEY
-```
-
-Use the public anon/publishable key only. Never put a service-role or secret key in a Flutter app or commit project credentials. If the project has existing tables or policies, review the SQL before applying it rather than running it unchanged.
-
-The login screen signs in existing users and attempts account creation when an email is not registered. New accounts need a username; profile photos can be selected from a file picker. With email confirmation enabled, sign in after confirming and upload or change the photo from **My Profile**.
-
-Messages are shared in the public `global` room. User-created channels are private and invite-only; the creator can invite registered users by username. Invitations can be accepted or declined in Messages. Image and video attachments preview in chat; other files have a download action. Attachments are limited to 50 MB each.
+The Project Already Includes A Reconfigured Supabase DB. No Need to Configure Manually :>
 
 ## 📁 Project Structure
 
