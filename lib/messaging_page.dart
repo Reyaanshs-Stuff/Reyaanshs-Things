@@ -171,36 +171,34 @@ class _MessagingPageState extends State<MessagingPage> {
       _errorMessage = null;
     });
     try {
-      final result = await FilePicker.pickFiles(
-        type: FileType.any,
-        allowMultiple: true,
-        withData: true,
-      );
-      if (result == null || !mounted) return;
-      if (_pendingUploads.length + result.files.length > 10) {
+      final files = await FilePicker.pickFiles(type: FileType.any);
+      if (files.isEmpty || !mounted) return;
+      if (_pendingUploads.length + files.length > 10) {
         throw const FormatException('Attach up to 10 files per message.');
       }
 
       final selectedFiles = <PendingUpload>[];
-      for (final file in result.files) {
-        if (file.size < 1 || file.size > 50 * 1024 * 1024) {
+      for (final file in files) {
+        final size = file.lengthSync() ?? await file.length();
+        if (size == null || size < 1 || size > 50 * 1024 * 1024) {
           throw FormatException(
             '${file.name} is empty or larger than the 50 MB limit.',
           );
         }
-        final bytes = file.bytes;
-        if (bytes == null || bytes.isEmpty) {
+        final bytes = await file.readAsBytes();
+        if (bytes.isEmpty) {
           throw FormatException('${file.name} could not be read.');
         }
         selectedFiles.add(
           PendingUpload(
             name: file.name,
             bytes: bytes,
-            sizeBytes: file.size,
+            sizeBytes: size,
             mimeType: _mimeTypeFor(file.name),
           ),
         );
       }
+      if (!mounted) return;
       setState(() => _pendingUploads.addAll(selectedFiles));
     } on Exception catch (error) {
       if (mounted) setState(() => _errorMessage = error.toString());
@@ -1445,20 +1443,23 @@ class _CreateChannelDialogState extends State<_CreateChannelDialog> {
 
   Future<void> _pickAvatar() async {
     try {
-      final result = await FilePicker.pickFiles(
-        type: FileType.image,
-        withData: true,
-      );
-      if (result == null || result.files.isEmpty) return;
-      final file = result.files.single;
-      final mimeType = _mimeTypeFor(file.name);
-      if (file.size > 5 * 1024 * 1024 ||
-          file.bytes == null ||
-          !mimeType.startsWith('image/')) {
+      final file = await FilePicker.pickFile(type: FileType.image);
+      if (file == null) return;
+      final size = file.lengthSync() ?? await file.length();
+      if (size == null || size > 5 * 1024 * 1024) {
         throw const FormatException('Choose an image smaller than 5 MB.');
       }
+      if (!mounted) return;
+      final bytes = await file.readAsBytes();
+      final mimeType = _mimeTypeFor(file.name);
+      if (!mounted) return;
+      if (bytes.isEmpty || !mimeType.startsWith('image/')) {
+        throw const FormatException(
+          'Choose a readable image smaller than 5 MB.',
+        );
+      }
       setState(() {
-        _avatarBytes = file.bytes;
+        _avatarBytes = bytes;
         _avatarFileName = file.name;
         _avatarMimeType = mimeType;
         _errorMessage = null;

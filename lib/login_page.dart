@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -67,19 +65,15 @@ class _LoginPageState extends State<LoginPage> {
       _errorMessage = null;
     });
     try {
-      final result = await FilePicker.pickFiles(
-        type: FileType.image,
-        withData: true,
-        allowMultiple: false,
-      );
-      if (result == null || result.files.isEmpty) return;
-
-      final file = result.files.single;
-      if (file.size > 5 * 1024 * 1024) {
+      final file = await FilePicker.pickFile(type: FileType.image);
+      if (file == null) return;
+      final size = file.lengthSync() ?? await file.length();
+      if (size == null || size > 5 * 1024 * 1024) {
         throw const FormatException('Choose an image smaller than 5 MB.');
       }
-      final bytes = file.bytes;
-      if (bytes == null || bytes.isEmpty) {
+      final bytes = await file.readAsBytes();
+      if (!mounted) return;
+      if (bytes.isEmpty) {
         throw const FormatException('The selected image could not be read.');
       }
       final mimeType = _imageMimeType(file.extension);

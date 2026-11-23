@@ -65,22 +65,20 @@ class _ProfilePageState extends State<ProfilePage> {
       _errorMessage = null;
     });
     try {
-      final result = await FilePicker.pickFiles(
-        type: FileType.image,
-        withData: true,
-        allowMultiple: false,
-      );
-      if (result == null || result.files.isEmpty) return;
-      final file = result.files.single;
-      if (file.size > 5 * 1024 * 1024) {
+      final file = await FilePicker.pickFile(type: FileType.image);
+      if (file == null) return;
+      final size = file.lengthSync() ?? await file.length();
+      if (size == null || size > 5 * 1024 * 1024) {
         throw const FormatException('Choose an image smaller than 5 MB.');
       }
       final mimeType = _imageMimeType(file.extension);
-      if (file.bytes == null || file.bytes!.isEmpty || mimeType == null) {
+      final bytes = await file.readAsBytes();
+      if (!mounted) return;
+      if (bytes.isEmpty || mimeType == null) {
         throw const FormatException('Choose a readable JPG, PNG, or WebP image.');
       }
       setState(() {
-        _avatarBytes = file.bytes;
+        _avatarBytes = bytes;
         _avatarFileName = file.name;
         _avatarMimeType = mimeType;
       });
