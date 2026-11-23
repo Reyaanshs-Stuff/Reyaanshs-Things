@@ -1,8 +1,11 @@
+import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
+import 'app_updater.dart';
 import 'physics_chaos_board.dart';
 
 class AboutPage extends StatefulWidget {
@@ -85,7 +88,7 @@ class _AboutPageState extends State<AboutPage> {
           future: _packageInfoFuture,
           builder: (context, snapshot) {
             final version = snapshot.hasData
-                ? snapshot.data!.version
+                ? _formatAppVersion(snapshot.data!)
                 : snapshot.hasError
                 ? 'Unable to load version'
                 : 'Loading...';
@@ -190,6 +193,160 @@ class _AboutCard extends StatefulWidget {
 
 class _AboutCardState extends State<_AboutCard> {
   bool _isBrandHovered = false;
+  final AppUpdater _updater = AppUpdater();
+  bool _isCheckingForUpdates = false;
+  bool _isDownloadingUpdate = false;
+  bool _updateCheckFailed = false;
+  double? _downloadProgress;
+  String? _updateMessage;
+
+  bool get _supportsApkUpdates =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+
+  @override
+  void initState() {
+    super.initState();
+    if (_supportsApkUpdates) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          unawaited(_checkForUpdates());
+        }
+      });
+    } else {
+      _updateMessage = 'In-app APK updates are available on Android.';
+    }
+  }
+
+  Future<void> _checkForUpdates() async {
+    if (_isCheckingForUpdates || _isDownloadingUpdate || !_supportsApkUpdates) {
+      return;
+    }
+
+    setState(() {
+      _isCheckingForUpdates = true;
+      _updateCheckFailed = false;
+      _updateMessage = 'Checking GitHub Releases...';
+    });
+
+    try {
+      final packageInfo = await widget.packageInfoFuture;
+      final currentVersion = _formatAppVersion(packageInfo);
+      final latestRelease = await _updater.fetchLatestRelease();
+
+      if (!mounted) return;
+
+      if (AppUpdater.compareVersions(latestRelease.version, currentVersion) >
+          0) {
+        setState(() {
+          _updateMessage =
+              'Version $currentVersion is outdated. Version '
+              '${latestRelease.version} is available.';
+        });
+
+        final shouldDownload = await _showUpdateDialog(
+          currentVersion: currentVersion,
+          latestVersion: latestRelease.version,
+        );
+        if (shouldDownload && mounted) {
+          await _downloadAndInstall(latestRelease);
+        }
+      } else {
+        setState(() {
+          _updateMessage = "You're up to date (v$currentVersion).";
+        });
+      }
+    } on Exception catch (error) {
+      if (mounted) {
+        setState(() {
+          _updateCheckFailed = true;
+          _updateMessage = 'Update check failed: ${_errorMessage(error)}';
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isCheckingForUpdates = false);
+      }
+    }
+  }
+
+  Future<bool> _showUpdateDialog({
+    required String currentVersion,
+    required String latestVersion,
+  }) async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            icon: Icon(
+              Icons.system_update_alt_rounded,
+              color: Theme.of(context).colorScheme.primary,
+              size: 34,
+            ),
+            title: const Text('Update available'),
+            content: Text(
+              'Your current version ($currentVersion) is outdated.\n\n'
+              'Download the latest version ($latestVersion)? '
+              'The APK will be saved temporarily, then Android will open '
+              'the package installer.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton.icon(
+                onPressed: () => Navigator.pop(dialogContext, true),
+                icon: const Icon(Icons.download_rounded),
+                label: const Text('Download'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+  }
+
+  Future<void> _downloadAndInstall(AppUpdateRelease release) async {
+    setState(() {
+      _isDownloadingUpdate = true;
+      _downloadProgress = null;
+      _updateCheckFailed = false;
+      _updateMessage = 'Downloading version ${release.version}...';
+    });
+
+    try {
+      await _updater.downloadAndInstall(
+        release,
+        onProgress: (progress) {
+          if (mounted) {
+            setState(() => _downloadProgress = progress);
+          }
+        },
+      );
+      if (mounted) {
+        setState(() {
+          _updateMessage =
+              'Installer opened. Follow the prompts to install the update.';
+        });
+      }
+    } on Exception catch (error) {
+      if (mounted) {
+        setState(() {
+          _updateCheckFailed = true;
+          _updateMessage = 'Update download failed: ${_errorMessage(error)}';
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isDownloadingUpdate = false);
+      }
+    }
+  }
+
+  String _errorMessage(Exception error) {
+    final message = error.toString();
+    return message.startsWith('Exception: ')
+        ? message.substring('Exception: '.length)
+        : message;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -255,7 +412,7 @@ class _AboutCardState extends State<_AboutCard> {
               future: widget.packageInfoFuture,
               builder: (context, snapshot) {
                 final version = snapshot.hasData
-                    ? snapshot.data!.version
+                    ? _formatAppVersion(snapshot.data!)
                     : snapshot.hasError
                     ? 'Unable to load version'
                     : 'Loading...';
@@ -267,7 +424,183 @@ class _AboutCardState extends State<_AboutCard> {
                 );
               },
             ),
+            const SizedBox(height: 16),
+            _AboutUpdateCard(
+              isAndroid: _supportsApkUpdates,
+              isChecking: _isCheckingForUpdates,
+              isDownloading: _isDownloadingUpdate,
+              hasError: _updateCheckFailed,
+              progress: _downloadProgress,
+              message: _updateMessage,
+              onCheckForUpdates: _checkForUpdates,
+            ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+String _formatAppVersion(PackageInfo packageInfo) {
+  final buildNumber = packageInfo.buildNumber.trim();
+  return buildNumber.isEmpty
+      ? packageInfo.version
+      : '${packageInfo.version}+$buildNumber';
+}
+
+class _AboutUpdateCard extends StatefulWidget {
+  const _AboutUpdateCard({
+    required this.isAndroid,
+    required this.isChecking,
+    required this.isDownloading,
+    required this.hasError,
+    required this.progress,
+    required this.message,
+    required this.onCheckForUpdates,
+  });
+
+  final bool isAndroid;
+  final bool isChecking;
+  final bool isDownloading;
+  final bool hasError;
+  final double? progress;
+  final String? message;
+  final VoidCallback onCheckForUpdates;
+
+  @override
+  State<_AboutUpdateCard> createState() => _AboutUpdateCardState();
+}
+
+class _AboutUpdateCardState extends State<_AboutUpdateCard> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final isBusy = widget.isChecking || widget.isDownloading;
+    final statusColor = widget.hasError
+        ? colors.error
+        : colors.onSurfaceVariant;
+    final statusIcon = widget.hasError
+        ? Icons.error_outline_rounded
+        : widget.message?.startsWith("You're up to date") == true
+        ? Icons.check_circle_outline_rounded
+        : Icons.info_outline_rounded;
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: AnimatedScale(
+        scale: _isHovered ? 1.01 : 1,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: _isHovered
+                ? colors.primaryContainer.withValues(alpha: 0.45)
+                : colors.surfaceContainerHigh,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: _isHovered
+                  ? colors.primary.withValues(alpha: 0.55)
+                  : colors.outlineVariant,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: colors.primaryContainer,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Icon(
+                      Icons.system_update_alt_rounded,
+                      color: colors.onPrimaryContainer,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'App updates',
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w700),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          widget.isAndroid
+                              ? 'Check for the latest Android release'
+                              : 'Android APK updates',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: colors.onSurfaceVariant),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.tonalIcon(
+                  onPressed: widget.isAndroid && !isBusy
+                      ? widget.onCheckForUpdates
+                      : null,
+                  icon: isBusy
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Icon(
+                          widget.isAndroid
+                              ? Icons.refresh_rounded
+                              : Icons.android_rounded,
+                        ),
+                  label: Text(
+                    !widget.isAndroid
+                        ? 'Android only'
+                        : widget.isDownloading
+                        ? 'Downloading update...'
+                        : widget.isChecking
+                        ? 'Checking for updates...'
+                        : 'Check for updates',
+                  ),
+                ),
+              ),
+              if (widget.isDownloading) ...[
+                const SizedBox(height: 12),
+                LinearProgressIndicator(value: widget.progress),
+              ],
+              if (widget.message != null) ...[
+                const SizedBox(height: 12),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(statusIcon, size: 18, color: statusColor),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        widget.message!,
+                        style: Theme.of(context).textTheme.bodySmall
+                            ?.copyWith(color: statusColor, height: 1.4),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
         ),
       ),
     );
