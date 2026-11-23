@@ -21,11 +21,16 @@ More features are being developed and will be introduced as the project grows.
 
 ## 📦 Downloads
 
-**Coming soon!**
+**Releases are now live!** 🎉
 
-Official releases and downloadable builds are not available yet.
+You can download the latest Android APK from the [Releases page](https://github.com/Reyaanshs-Stuff/Reyaanshs-Things/releases).
 
-Stay tuned for future releases.
+1. Open the [Releases page](https://github.com/Reyaanshs-Stuff/Reyaanshs-Things/releases).
+2. Find the latest release.
+3. Download the APK from the release assets.
+4. Follow the installation instructions provided in the release description.
+
+Make sure to download the latest version for the newest features, improvements, and fixes.
 
 ## 🛠️ Built With
 
