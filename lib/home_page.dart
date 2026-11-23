@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'about_page.dart';
 import 'app_profile.dart';
 import 'profile_page.dart';
 
@@ -15,6 +16,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   bool _isSidebarCollapsed = false;
   bool _showProfilePage = false;
+  bool _showAboutPage = false;
 
   void _toggleSidebar() {
     setState(() {
@@ -25,12 +27,21 @@ class _HomePageState extends State<HomePage> {
   void _openProfile() {
     setState(() {
       _showProfilePage = true;
+      _showAboutPage = false;
+    });
+  }
+
+  void _openAbout() {
+    setState(() {
+      _showProfilePage = false;
+      _showAboutPage = true;
     });
   }
 
   void _closeProfile() {
     setState(() {
       _showProfilePage = false;
+      _showAboutPage = false;
     });
   }
 
@@ -59,6 +70,10 @@ class _HomePageState extends State<HomePage> {
                         Navigator.of(context).pop();
                         _openProfile();
                       },
+                      onAboutSelected: () {
+                        Navigator.of(context).pop();
+                        _openAbout();
+                      },
                     ),
                   ),
                 ),
@@ -75,11 +90,17 @@ class _HomePageState extends State<HomePage> {
                         onToggle: _toggleSidebar,
                         onHomeSelected: _closeProfile,
                         onProfileSelected: _openProfile,
+                        onAboutSelected: _openAbout,
                       ),
                     Expanded(
                       child: _showProfilePage
                           ? ProfilePage(
                               profile: widget.profile,
+                              isWide: isWide,
+                              onBack: _closeProfile,
+                            )
+                          : _showAboutPage
+                          ? AboutPage(
                               isWide: isWide,
                               onBack: _closeProfile,
                             )
@@ -107,6 +128,7 @@ class _ProfileSidebar extends StatefulWidget {
     required this.onToggle,
     required this.onHomeSelected,
     required this.onProfileSelected,
+    required this.onAboutSelected,
   });
 
   final AppProfile profile;
@@ -114,6 +136,7 @@ class _ProfileSidebar extends StatefulWidget {
   final VoidCallback onToggle;
   final VoidCallback onHomeSelected;
   final VoidCallback onProfileSelected;
+  final VoidCallback onAboutSelected;
 
   @override
   State<_ProfileSidebar> createState() => _ProfileSidebarState();
@@ -122,6 +145,7 @@ class _ProfileSidebar extends StatefulWidget {
 class _ProfileSidebarState extends State<_ProfileSidebar> {
   bool _isProfileHovered = false;
   bool _isHomeHovered = false;
+  bool _isAboutHovered = false;
 
   @override
   Widget build(BuildContext context) {
@@ -222,6 +246,65 @@ class _ProfileSidebarState extends State<_ProfileSidebar> {
             padding: EdgeInsets.fromLTRB(
               widget.isCollapsed ? 8 : 16,
               12,
+              widget.isCollapsed ? 8 : 16,
+              0,
+            ),
+            child: MouseRegion(
+              onEnter: (_) => setState(() => _isAboutHovered = true),
+              onExit: (_) => setState(() => _isAboutHovered = false),
+              child: Tooltip(
+                message: 'About App',
+                child: InkWell(
+                  key: const Key('sidebar-about'),
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: widget.onAboutSelected,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 260),
+                    curve: Curves.easeOutCubic,
+                    height: 48,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: widget.isCollapsed ? 8 : 14,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _isAboutHovered
+                          ? colors.primaryContainer.withValues(alpha: 0.8)
+                          : colors.primaryContainer.withValues(alpha: 0.35),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: widget.isCollapsed
+                          ? MainAxisAlignment.center
+                          : MainAxisAlignment.start,
+                      children: [
+                        AnimatedScale(
+                          scale: _isAboutHovered ? 1.1 : 1,
+                          duration: const Duration(milliseconds: 260),
+                          child: Icon(
+                            Icons.info_outline_rounded,
+                            color: _isAboutHovered
+                                ? colors.primary
+                                : colors.onSurfaceVariant,
+                          ),
+                        ),
+                        if (!widget.isCollapsed) ...[
+                          const SizedBox(width: 12),
+                          Text(
+                            'About App',
+                            style: Theme.of(context).textTheme.titleSmall
+                                ?.copyWith(fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              widget.isCollapsed ? 8 : 16,
+              8,
               widget.isCollapsed ? 8 : 16,
               20,
             ),

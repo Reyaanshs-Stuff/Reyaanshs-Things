@@ -91,9 +91,67 @@ void main() {
     await tester.tap(find.byTooltip('Open sidebar'));
     await tester.pumpAndSettle();
     expect(find.byTooltip('Collapse sidebar'), findsOneWidget);
+    final aboutButton = find.byKey(const Key('sidebar-about'));
+    final sidebarProfile = find.byKey(const Key('sidebar-profile'));
+    expect(aboutButton, findsOneWidget);
+    expect(
+      tester.getTopLeft(aboutButton).dy,
+      lessThan(tester.getTopLeft(sidebarProfile).dy),
+    );
     expect(find.byKey(const Key('sidebar-profile')), findsOneWidget);
     expect(find.text('My Profile'), findsOneWidget);
 
+    await tester.tap(aboutButton);
+    await tester.pumpAndSettle();
+    expect(find.text('About App'), findsOneWidget);
+    expect(find.text("Reyaansh's Things"), findsOneWidget);
+    expect(find.text('Reyaanshs-Stuff'), findsOneWidget);
+    expect(find.byKey(const Key('about-info-author')), findsOneWidget);
+    expect(find.byKey(const Key('about-info-version')), findsOneWidget);
+    expect(find.text('Project URL'), findsNothing);
+
+    final appLogoTapTarget = find.byKey(const Key('about-app-logo'));
+    for (var tap = 0; tap < 3; tap++) {
+      await tester.tap(appLogoTapTarget);
+    }
+    await tester.pump();
+    expect(find.byKey(const Key('physics-board')), findsNothing);
+    await tester.tap(appLogoTapTarget);
+    await tester.pump();
+    expect(find.byKey(const Key('physics-board')), findsOneWidget);
+    final physicsAppName = find.byKey(const ValueKey('physics-app-name'));
+    final initialPosition = tester.getTopLeft(physicsAppName);
+    await tester.drag(physicsAppName, const Offset(30, 36));
+    await tester.pump();
+    expect(tester.getTopLeft(physicsAppName), isNot(initialPosition));
+    await tester.tap(find.byKey(const ValueKey('physics-app-logo')));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.byKey(const Key('physics-board')), findsNothing);
+
+    final brandScale = find.byKey(const Key('about-brand-scale'));
+    final appLogo = find.byType(Image).first;
+    final appName = find.byKey(const Key('about-app-name'));
+    final brandMouse = await tester.createGesture(
+      kind: PointerDeviceKind.mouse,
+    );
+    await brandMouse.addPointer(location: tester.getCenter(appLogo));
+    await brandMouse.moveTo(tester.getCenter(appLogo));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(tester.widget<AnimatedScale>(brandScale).scale, 1.04);
+    await brandMouse.moveTo(tester.getCenter(appName));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(tester.widget<AnimatedScale>(brandScale).scale, 1.04);
+    await brandMouse.moveTo(
+      tester.getCenter(find.byKey(const Key('about-info-author'))),
+    );
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(tester.widget<AnimatedScale>(brandScale).scale, 1);
+    await brandMouse.removePointer();
+    await tester.tap(find.byKey(const Key('about-back')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Open sidebar'));
+    await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Collapse sidebar'));
     await tester.pumpAndSettle();
     expect(find.byTooltip('Expand sidebar'), findsOneWidget);
