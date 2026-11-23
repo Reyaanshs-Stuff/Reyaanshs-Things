@@ -19,25 +19,6 @@ More features are being developed and will be introduced as the project grows.
 - Android
 - Web
 
-## 📸 Screenshots
-
-Here's a look at the application.
-
-<table>
-  <tr>
-    <td width="50%" align="center">
-      <img src="screenshots/login.png" alt="Login Screen" width="100%">
-      <b>Login Screen</b>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%" align="center">
-      <img src="screenshots/home.png" alt="Home Screen" width="100%">
-      <b>Home Screen</b>
-    </td>
-  </tr>
-</table>
-
 ## 📦 Downloads
 
 **Coming soon!**
