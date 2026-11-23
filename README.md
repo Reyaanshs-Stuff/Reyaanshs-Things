@@ -87,7 +87,9 @@ Useful resources for working with the technologies behind this project:
 
 Contributions, suggestions, and ideas are welcome!
 
-If you'd like to improve the project or contribute a feature, feel free to fork the repository and submit a pull request.
+If you'd like to improve the project or contribute a feature, please check the [CONTRIBUTING.md](CONTRIBUTING.md) file for contribution guidelines before submitting a pull request.
+
+Feel free to fork the repository and contribute!
 
 ## 📄 License
 
