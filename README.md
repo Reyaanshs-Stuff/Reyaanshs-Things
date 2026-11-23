@@ -67,7 +67,7 @@ flutter run
 
 ## 🖥 Supabase
 
-The Project Already Includes A Reconfigured Supabase DB. No Need to Configure Manually :>
+The Project Already Includes A Preconfigured Supabase DB. No Need to Configure Manually :>
 
 ## 📁 Project Structure
 
