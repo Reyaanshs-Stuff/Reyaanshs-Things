@@ -30,7 +30,7 @@ You can download the latest Android APK from the [Releases page](https://github.
 3. Download the APK from the release assets.
 4. Follow the installation instructions provided in the release description.
 
-Make sure to download the latest version for the newest features, improvements, and fixes.
+Make sure to download the latest version for the newest features, improvements, and bugfixes.
 
 ## 🛠️ Built With
 
@@ -67,7 +67,7 @@ flutter run
 
 ## 🖥 Supabase
 
-This project already comes with a preconfigured Supabase database, so there's no need for manual setup or configuration. Just download the app from **Releases**, sign up, and you're good to go! :>
+This project already comes with a preconfigured Supabase database, so there's no need for manual setup or configuration. Just download the app from **Releases Section**, sign up, and you're good to go! :>
 
 ## 📁 Project Structure
 
