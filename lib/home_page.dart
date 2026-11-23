@@ -2,12 +2,21 @@ import 'package:flutter/material.dart';
 
 import 'about_page.dart';
 import 'app_profile.dart';
+import 'messaging_page.dart';
 import 'profile_page.dart';
+import 'supabase_service.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({required this.profile, super.key});
+  const HomePage({
+    required this.profile,
+    required this.onProfileUpdated,
+    required this.onSignOut,
+    super.key,
+  });
 
   final AppProfile profile;
+  final ValueChanged<AppProfile> onProfileUpdated;
+  final Future<void> Function() onSignOut;
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -17,6 +26,8 @@ class _HomePageState extends State<HomePage> {
   bool _isSidebarCollapsed = false;
   bool _showProfilePage = false;
   bool _showAboutPage = false;
+  bool _showMessagingPage = false;
+  final _profileService = SupabaseService();
 
   void _toggleSidebar() {
     setState(() {
@@ -28,6 +39,7 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       _showProfilePage = true;
       _showAboutPage = false;
+      _showMessagingPage = false;
     });
   }
 
@@ -35,6 +47,15 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       _showProfilePage = false;
       _showAboutPage = true;
+      _showMessagingPage = false;
+    });
+  }
+
+  void _openMessaging() {
+    setState(() {
+      _showProfilePage = false;
+      _showAboutPage = false;
+      _showMessagingPage = true;
     });
   }
 
@@ -42,6 +63,7 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       _showProfilePage = false;
       _showAboutPage = false;
+      _showMessagingPage = false;
     });
   }
 
@@ -66,6 +88,10 @@ class _HomePageState extends State<HomePage> {
                         Navigator.of(context).pop();
                         _closeProfile();
                       },
+                      onMessagesSelected: () {
+                        Navigator.of(context).pop();
+                        _openMessaging();
+                      },
                       onProfileSelected: () {
                         Navigator.of(context).pop();
                         _openProfile();
@@ -89,6 +115,7 @@ class _HomePageState extends State<HomePage> {
                         isCollapsed: _isSidebarCollapsed,
                         onToggle: _toggleSidebar,
                         onHomeSelected: _closeProfile,
+                        onMessagesSelected: _openMessaging,
                         onProfileSelected: _openProfile,
                         onAboutSelected: _openAbout,
                       ),
@@ -97,10 +124,19 @@ class _HomePageState extends State<HomePage> {
                           ? ProfilePage(
                               profile: widget.profile,
                               isWide: isWide,
+                              service: _profileService,
                               onBack: _closeProfile,
+                              onProfileUpdated: widget.onProfileUpdated,
+                              onSignOut: widget.onSignOut,
                             )
                           : _showAboutPage
                           ? AboutPage(
+                              isWide: isWide,
+                              onBack: _closeProfile,
+                            )
+                          : _showMessagingPage
+                          ? MessagingPage(
+                              profile: widget.profile,
                               isWide: isWide,
                               onBack: _closeProfile,
                             )
@@ -127,6 +163,7 @@ class _ProfileSidebar extends StatefulWidget {
     required this.isCollapsed,
     required this.onToggle,
     required this.onHomeSelected,
+    required this.onMessagesSelected,
     required this.onProfileSelected,
     required this.onAboutSelected,
   });
@@ -135,6 +172,7 @@ class _ProfileSidebar extends StatefulWidget {
   final bool isCollapsed;
   final VoidCallback onToggle;
   final VoidCallback onHomeSelected;
+  final VoidCallback onMessagesSelected;
   final VoidCallback onProfileSelected;
   final VoidCallback onAboutSelected;
 
@@ -145,6 +183,7 @@ class _ProfileSidebar extends StatefulWidget {
 class _ProfileSidebarState extends State<_ProfileSidebar> {
   bool _isProfileHovered = false;
   bool _isHomeHovered = false;
+  bool _isMessagesHovered = false;
   bool _isAboutHovered = false;
 
   @override
@@ -230,6 +269,65 @@ class _ProfileSidebarState extends State<_ProfileSidebar> {
                           const SizedBox(width: 12),
                           Text(
                             'Home',
+                            style: Theme.of(context).textTheme.titleSmall
+                                ?.copyWith(fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              widget.isCollapsed ? 8 : 16,
+              0,
+              widget.isCollapsed ? 8 : 16,
+              8,
+            ),
+            child: MouseRegion(
+              onEnter: (_) => setState(() => _isMessagesHovered = true),
+              onExit: (_) => setState(() => _isMessagesHovered = false),
+              child: Tooltip(
+                message: 'Messages',
+                child: InkWell(
+                  key: const Key('sidebar-messages'),
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: widget.onMessagesSelected,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 260),
+                    curve: Curves.easeOutCubic,
+                    height: 48,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: widget.isCollapsed ? 8 : 14,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _isMessagesHovered
+                          ? colors.primaryContainer.withValues(alpha: 0.8)
+                          : colors.primaryContainer.withValues(alpha: 0.35),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: widget.isCollapsed
+                          ? MainAxisAlignment.center
+                          : MainAxisAlignment.start,
+                      children: [
+                        AnimatedScale(
+                          scale: _isMessagesHovered ? 1.1 : 1,
+                          duration: const Duration(milliseconds: 260),
+                          child: Icon(
+                            Icons.forum_rounded,
+                            color: _isMessagesHovered
+                                ? colors.primary
+                                : colors.onSurfaceVariant,
+                          ),
+                        ),
+                        if (!widget.isCollapsed) ...[
+                          const SizedBox(width: 12),
+                          Text(
+                            'Messages',
                             style: Theme.of(context).textTheme.titleSmall
                                 ?.copyWith(fontWeight: FontWeight.w600),
                           ),
@@ -548,20 +646,14 @@ class _HomeContentState extends State<_HomeContent> {
 class _ProfileAvatar extends StatelessWidget {
   const _ProfileAvatar({required this.pictureUrl, required this.radius});
 
-  final String pictureUrl;
+  final String? pictureUrl;
   final double radius;
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
 
-    return ClipOval(
-      child: Image.network(
-        pictureUrl,
-        width: radius * 2,
-        height: radius * 2,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => Container(
+    final fallback = Container(
           width: radius * 2,
           height: radius * 2,
           color: colors.primaryContainer,
@@ -570,8 +662,18 @@ class _ProfileAvatar extends StatelessWidget {
             size: radius,
             color: colors.onPrimaryContainer,
           ),
-        ),
-      ),
+        );
+
+    return ClipOval(
+      child: pictureUrl == null
+          ? fallback
+          : Image.network(
+              pictureUrl!,
+              width: radius * 2,
+              height: radius * 2,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => fallback,
+            ),
     );
   }
 }

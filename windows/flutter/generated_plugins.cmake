@@ -3,6 +3,11 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
+  app_links
+  file_saver
+  media_kit_libs_windows_video
+  url_launcher_windows
+  media_kit_video
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST
