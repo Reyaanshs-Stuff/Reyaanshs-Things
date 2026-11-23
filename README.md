@@ -67,7 +67,7 @@ flutter run
 
 ## 🖥 Supabase
 
-The Project Already Includes A Preconfigured Supabase DB. No Need to Configure Manually :>
+This project already comes with a preconfigured Supabase database, so there's no need for manual setup or configuration. Just download the app from **Releases**, sign up, and you're good to go! :>
 
 ## 📁 Project Structure
 
