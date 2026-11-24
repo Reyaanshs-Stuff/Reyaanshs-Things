@@ -81,6 +81,16 @@ class _AboutPageState extends State<AboutPage> {
         ),
       ),
       PhysicsElement(
+        id: 'website',
+        size: Size(cardWidth, 90),
+        builder: (key) => _AboutInfoCard(
+          key: key,
+          label: 'Website',
+          value: 'reyaanshs-stuff.github.io',
+          leading: _WebsiteIcon(colors: colors),
+        ),
+      ),
+      PhysicsElement(
         id: 'version',
         size: Size(cardWidth, 90),
         builder: (key) => FutureBuilder<PackageInfo>(
@@ -408,6 +418,12 @@ class _AboutCardState extends State<_AboutCard> {
               leading: _OrganizationAvatar(colors: colors),
             ),
             const SizedBox(height: 12),
+            _AboutInfoCard(
+              label: 'Website',
+              value: 'reyaanshs-stuff.github.io',
+              leading: _WebsiteIcon(colors: colors),
+            ),
+            const SizedBox(height: 12),
             FutureBuilder<PackageInfo>(
               future: widget.packageInfoFuture,
               builder: (context, snapshot) {
@@ -694,6 +710,25 @@ class _VersionIcon extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
       ),
       child: Icon(Icons.sell_outlined, color: colors.onPrimaryContainer),
+    );
+  }
+}
+
+class _WebsiteIcon extends StatelessWidget {
+  const _WebsiteIcon({required this.colors});
+
+  final ColorScheme colors;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        color: colors.primaryContainer,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Icon(Icons.language_outlined, color: colors.onPrimaryContainer),
     );
   }
 }
