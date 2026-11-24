@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 
 import 'about_page.dart';
 import 'app_profile.dart';
+import 'app_settings.dart';
 import 'messaging_page.dart';
 import 'profile_page.dart';
+import 'settings_page.dart';
 import 'supabase_service.dart';
 
 class HomePage extends StatefulWidget {
@@ -11,12 +13,14 @@ class HomePage extends StatefulWidget {
     required this.profile,
     required this.onProfileUpdated,
     required this.onSignOut,
+    required this.settings,
     super.key,
   });
 
   final AppProfile profile;
   final ValueChanged<AppProfile> onProfileUpdated;
   final Future<void> Function() onSignOut;
+  final AppSettingsController settings;
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -27,12 +31,35 @@ class _HomePageState extends State<HomePage> {
   bool _showProfilePage = false;
   bool _showAboutPage = false;
   bool _showMessagingPage = false;
+  bool _showSettingsPage = false;
   final _profileService = SupabaseService();
 
-  void _toggleSidebar() {
+  @override
+  void initState() {
+    super.initState();
+    _isSidebarCollapsed = widget.settings.compactSidebar;
+    widget.settings.addListener(_onSettingsChanged);
+  }
+
+  @override
+  void dispose() {
+    widget.settings.removeListener(_onSettingsChanged);
+    super.dispose();
+  }
+
+  void _onSettingsChanged() {
+    if (!mounted) return;
     setState(() {
-      _isSidebarCollapsed = !_isSidebarCollapsed;
+      _isSidebarCollapsed = widget.settings.compactSidebar;
     });
+  }
+
+  void _toggleSidebar() {
+    final nextValue = !_isSidebarCollapsed;
+    setState(() {
+      _isSidebarCollapsed = nextValue;
+    });
+    widget.settings.setCompactSidebar(nextValue);
   }
 
   void _openProfile() {
@@ -40,6 +67,7 @@ class _HomePageState extends State<HomePage> {
       _showProfilePage = true;
       _showAboutPage = false;
       _showMessagingPage = false;
+      _showSettingsPage = false;
     });
   }
 
@@ -48,6 +76,7 @@ class _HomePageState extends State<HomePage> {
       _showProfilePage = false;
       _showAboutPage = true;
       _showMessagingPage = false;
+      _showSettingsPage = false;
     });
   }
 
@@ -56,6 +85,16 @@ class _HomePageState extends State<HomePage> {
       _showProfilePage = false;
       _showAboutPage = false;
       _showMessagingPage = true;
+      _showSettingsPage = false;
+    });
+  }
+
+  void _openSettings() {
+    setState(() {
+      _showProfilePage = false;
+      _showAboutPage = false;
+      _showMessagingPage = false;
+      _showSettingsPage = true;
     });
   }
 
@@ -64,6 +103,7 @@ class _HomePageState extends State<HomePage> {
       _showProfilePage = false;
       _showAboutPage = false;
       _showMessagingPage = false;
+      _showSettingsPage = false;
     });
   }
 
@@ -96,6 +136,10 @@ class _HomePageState extends State<HomePage> {
                         Navigator.of(context).pop();
                         _openProfile();
                       },
+                      onSettingsSelected: () {
+                        Navigator.of(context).pop();
+                        _openSettings();
+                      },
                       onAboutSelected: () {
                         Navigator.of(context).pop();
                         _openAbout();
@@ -105,7 +149,9 @@ class _HomePageState extends State<HomePage> {
                 ),
           body: Stack(
             children: [
-              const Positioned.fill(child: _PageBackground()),
+              Positioned.fill(
+                child: _PageBackground(settings: widget.settings),
+              ),
               SafeArea(
                 child: Row(
                   children: [
@@ -117,6 +163,7 @@ class _HomePageState extends State<HomePage> {
                         onHomeSelected: _closeProfile,
                         onMessagesSelected: _openMessaging,
                         onProfileSelected: _openProfile,
+                        onSettingsSelected: _openSettings,
                         onAboutSelected: _openAbout,
                       ),
                     Expanded(
@@ -130,14 +177,17 @@ class _HomePageState extends State<HomePage> {
                               onSignOut: widget.onSignOut,
                             )
                           : _showAboutPage
-                          ? AboutPage(
-                              isWide: isWide,
-                              onBack: _closeProfile,
-                            )
+                          ? AboutPage(isWide: isWide, onBack: _closeProfile)
                           : _showMessagingPage
                           ? MessagingPage(
                               profile: widget.profile,
                               isWide: isWide,
+                              onBack: _closeProfile,
+                            )
+                          : _showSettingsPage
+                          ? SettingsPage(
+                              isWide: isWide,
+                              settings: widget.settings,
                               onBack: _closeProfile,
                             )
                           : _HomeContent(
@@ -165,6 +215,7 @@ class _ProfileSidebar extends StatefulWidget {
     required this.onHomeSelected,
     required this.onMessagesSelected,
     required this.onProfileSelected,
+    required this.onSettingsSelected,
     required this.onAboutSelected,
   });
 
@@ -174,6 +225,7 @@ class _ProfileSidebar extends StatefulWidget {
   final VoidCallback onHomeSelected;
   final VoidCallback onMessagesSelected;
   final VoidCallback onProfileSelected;
+  final VoidCallback onSettingsSelected;
   final VoidCallback onAboutSelected;
 
   @override
@@ -185,6 +237,7 @@ class _ProfileSidebarState extends State<_ProfileSidebar> {
   bool _isHomeHovered = false;
   bool _isMessagesHovered = false;
   bool _isAboutHovered = false;
+  bool _isSettingsHovered = false;
 
   @override
   Widget build(BuildContext context) {
@@ -344,6 +397,65 @@ class _ProfileSidebarState extends State<_ProfileSidebar> {
             padding: EdgeInsets.fromLTRB(
               widget.isCollapsed ? 8 : 16,
               12,
+              widget.isCollapsed ? 8 : 16,
+              0,
+            ),
+            child: MouseRegion(
+              onEnter: (_) => setState(() => _isSettingsHovered = true),
+              onExit: (_) => setState(() => _isSettingsHovered = false),
+              child: Tooltip(
+                message: 'Settings',
+                child: InkWell(
+                  key: const Key('sidebar-settings'),
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: widget.onSettingsSelected,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 260),
+                    curve: Curves.easeOutCubic,
+                    height: 48,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: widget.isCollapsed ? 8 : 14,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _isSettingsHovered
+                          ? colors.primaryContainer.withValues(alpha: 0.8)
+                          : colors.primaryContainer.withValues(alpha: 0.35),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: widget.isCollapsed
+                          ? MainAxisAlignment.center
+                          : MainAxisAlignment.start,
+                      children: [
+                        AnimatedScale(
+                          scale: _isSettingsHovered ? 1.1 : 1,
+                          duration: const Duration(milliseconds: 260),
+                          child: Icon(
+                            Icons.settings_outlined,
+                            color: _isSettingsHovered
+                                ? colors.primary
+                                : colors.onSurfaceVariant,
+                          ),
+                        ),
+                        if (!widget.isCollapsed) ...[
+                          const SizedBox(width: 12),
+                          Text(
+                            'Settings',
+                            style: Theme.of(context).textTheme.titleSmall
+                                ?.copyWith(fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              widget.isCollapsed ? 8 : 16,
+              8,
               widget.isCollapsed ? 8 : 16,
               0,
             ),
@@ -654,15 +766,15 @@ class _ProfileAvatar extends StatelessWidget {
     final colors = Theme.of(context).colorScheme;
 
     final fallback = Container(
-          width: radius * 2,
-          height: radius * 2,
-          color: colors.primaryContainer,
-          child: Icon(
-            Icons.person_rounded,
-            size: radius,
-            color: colors.onPrimaryContainer,
-          ),
-        );
+      width: radius * 2,
+      height: radius * 2,
+      color: colors.primaryContainer,
+      child: Icon(
+        Icons.person_rounded,
+        size: radius,
+        color: colors.onPrimaryContainer,
+      ),
+    );
 
     return ClipOval(
       child: pictureUrl == null
@@ -679,11 +791,66 @@ class _ProfileAvatar extends StatelessWidget {
 }
 
 class _PageBackground extends StatelessWidget {
-  const _PageBackground();
+  const _PageBackground({required this.settings});
+
+  final AppSettingsController settings;
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Color.alphaBlend(
+      colors.primaryContainer.withValues(
+        alpha: (isDark ? 0.32 : 0.48) * settings.backgroundIntensity,
+      ),
+      colors.surface,
+    );
+    final tertiary = Color.alphaBlend(
+      colors.tertiaryContainer.withValues(
+        alpha: (isDark ? 0.28 : 0.40) * settings.backgroundIntensity,
+      ),
+      colors.surface,
+    );
+
+    if (settings.backgroundStyle == BackgroundStyle.soft) {
+      return DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: RadialGradient(
+            center: Alignment.topRight,
+            radius: 1.35,
+            colors: [tertiary, colors.surface, primary],
+            stops: const [0.0, 0.62, 1.0],
+          ),
+        ),
+      );
+    }
+
+    if (settings.backgroundStyle == BackgroundStyle.aurora) {
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          ColoredBox(color: colors.surface),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                center: const Alignment(-0.75, -0.72),
+                radius: 1.15,
+                colors: [primary, Colors.transparent],
+              ),
+            ),
+          ),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                center: const Alignment(0.82, 0.72),
+                radius: 1.25,
+                colors: [tertiary, Colors.transparent],
+              ),
+            ),
+          ),
+        ],
+      );
+    }
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -692,9 +859,21 @@ class _PageBackground extends StatelessWidget {
           end: Alignment.bottomRight,
           colors: [
             colors.surface,
-            colors.primaryContainer.withValues(alpha: 0.4),
-            colors.tertiaryContainer.withValues(alpha: 0.32),
+            Color.alphaBlend(
+              colors.primaryContainer.withValues(
+                alpha: (isDark ? 0.26 : 0.42) * settings.backgroundIntensity,
+              ),
+              colors.surface,
+            ),
+            Color.alphaBlend(
+              colors.tertiaryContainer.withValues(
+                alpha: (isDark ? 0.22 : 0.34) * settings.backgroundIntensity,
+              ),
+              colors.surface,
+            ),
+            colors.surface,
           ],
+          stops: const [0.0, 0.34, 0.72, 1.0],
         ),
       ),
     );

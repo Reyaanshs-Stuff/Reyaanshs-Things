@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:video_player_media_kit/video_player_media_kit.dart';
 
 import 'app_profile.dart';
+import 'app_settings.dart';
 import 'home_page.dart';
 import 'login_page.dart';
 import 'supabase_config.dart';
@@ -33,41 +34,58 @@ Future<void> main() async {
     return;
   }
 
-  runApp(const MyApp());
+  runApp(MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({this.configurationError, super.key});
 
   final String? configurationError;
 
   @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  final AppSettingsController _settings = AppSettingsController();
+
+  @override
+  void dispose() {
+    _settings.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    const seedColor = Color(0xFF6750A4);
-    return MaterialApp(
-      title: "Reyaansh's Things",
-      debugShowCheckedModeBanner: false,
-      themeMode: ThemeMode.system,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: seedColor),
-      ),
-      darkTheme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: seedColor,
-          brightness: Brightness.dark,
+    return ListenableBuilder(
+      listenable: _settings,
+      builder: (context, _) => TickerMode(
+        enabled: !_settings.reduceMotion,
+        child: MaterialApp(
+          title: "Reyaansh's Things",
+          debugShowCheckedModeBanner: false,
+          themeMode: _settings.themeMode,
+          theme: _settings.themeFor(Brightness.light),
+          darkTheme: _settings.themeFor(Brightness.dark),
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: TextScaler.linear(_settings.interfaceScale)),
+            child: child!,
+          ),
+          home: widget.configurationError == null
+              ? _AuthGate(settings: _settings)
+              : _SupabaseSetupPage(error: widget.configurationError!),
         ),
       ),
-      home: configurationError == null
-          ? const _AuthGate()
-          : _SupabaseSetupPage(error: configurationError!),
     );
   }
 }
 
 class _AuthGate extends StatefulWidget {
-  const _AuthGate();
+  const _AuthGate({required this.settings});
+
+  final AppSettingsController settings;
 
   @override
   State<_AuthGate> createState() => _AuthGateState();
@@ -175,6 +193,7 @@ class _AuthGateState extends State<_AuthGate> {
         profile: _profile!,
         onProfileUpdated: _updateProfile,
         onSignOut: _service.signOut,
+        settings: widget.settings,
       );
     }
 
@@ -214,6 +233,7 @@ class _AuthGateState extends State<_AuthGate> {
           profile: profile,
           onProfileUpdated: _updateProfile,
           onSignOut: _service.signOut,
+          settings: widget.settings,
         );
       },
     );
@@ -241,10 +261,7 @@ class _SupabaseCheckingPage extends StatelessWidget {
 }
 
 class _SupabaseConnectionError extends StatelessWidget {
-  const _SupabaseConnectionError({
-    required this.error,
-    required this.onRetry,
-  });
+  const _SupabaseConnectionError({required this.error, required this.onRetry});
 
   final String error;
   final VoidCallback onRetry;
@@ -298,10 +315,7 @@ class _SupabaseConnectionError extends StatelessWidget {
   }
 }
 
-Future<void> _copyErrorToClipboard(
-  BuildContext context,
-  String error,
-) async {
+Future<void> _copyErrorToClipboard(BuildContext context, String error) async {
   try {
     await Clipboard.setData(ClipboardData(text: error));
     if (context.mounted) {
