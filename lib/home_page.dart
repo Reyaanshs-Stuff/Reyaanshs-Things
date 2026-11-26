@@ -7,7 +7,7 @@ import 'messaging_page.dart';
 import 'profile_page.dart';
 import 'settings_page.dart';
 import 'supabase_service.dart';
-import 'utilities_page.dart';
+import 'weather_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({
@@ -32,7 +32,7 @@ class _HomePageState extends State<HomePage> {
   bool _showProfilePage = false;
   bool _showAboutPage = false;
   bool _showMessagingPage = false;
-  bool _showUtilitiesPage = false;
+  bool _showWeatherPage = false;
   bool _showSettingsPage = false;
   final _profileService = SupabaseService();
 
@@ -69,7 +69,7 @@ class _HomePageState extends State<HomePage> {
       _showProfilePage = true;
       _showAboutPage = false;
       _showMessagingPage = false;
-      _showUtilitiesPage = false;
+      _showWeatherPage = false;
       _showSettingsPage = false;
     });
   }
@@ -79,7 +79,7 @@ class _HomePageState extends State<HomePage> {
       _showProfilePage = false;
       _showAboutPage = true;
       _showMessagingPage = false;
-      _showUtilitiesPage = false;
+      _showWeatherPage = false;
       _showSettingsPage = false;
     });
   }
@@ -89,17 +89,17 @@ class _HomePageState extends State<HomePage> {
       _showProfilePage = false;
       _showAboutPage = false;
       _showMessagingPage = true;
-      _showUtilitiesPage = false;
+      _showWeatherPage = false;
       _showSettingsPage = false;
     });
   }
 
-  void _openUtilities() {
+  void _openWeather() {
     setState(() {
       _showProfilePage = false;
       _showAboutPage = false;
       _showMessagingPage = false;
-      _showUtilitiesPage = true;
+      _showWeatherPage = true;
       _showSettingsPage = false;
     });
   }
@@ -109,7 +109,7 @@ class _HomePageState extends State<HomePage> {
       _showProfilePage = false;
       _showAboutPage = false;
       _showMessagingPage = false;
-      _showUtilitiesPage = false;
+      _showWeatherPage = false;
       _showSettingsPage = true;
     });
   }
@@ -119,7 +119,7 @@ class _HomePageState extends State<HomePage> {
       _showProfilePage = false;
       _showAboutPage = false;
       _showMessagingPage = false;
-      _showUtilitiesPage = false;
+      _showWeatherPage = false;
       _showSettingsPage = false;
     });
   }
@@ -149,9 +149,9 @@ class _HomePageState extends State<HomePage> {
                         Navigator.of(context).pop();
                         _openMessaging();
                       },
-                      onUtilitiesSelected: () {
+                      onWeatherSelected: () {
                         Navigator.of(context).pop();
-                        _openUtilities();
+                        _openWeather();
                       },
                       onProfileSelected: () {
                         Navigator.of(context).pop();
@@ -183,7 +183,7 @@ class _HomePageState extends State<HomePage> {
                         onToggle: _toggleSidebar,
                         onHomeSelected: _closeProfile,
                         onMessagesSelected: _openMessaging,
-                        onUtilitiesSelected: _openUtilities,
+                        onWeatherSelected: _openWeather,
                         onProfileSelected: _openProfile,
                         onSettingsSelected: _openSettings,
                         onAboutSelected: _openAbout,
@@ -206,11 +206,8 @@ class _HomePageState extends State<HomePage> {
                               isWide: isWide,
                               onBack: _closeProfile,
                             )
-                          : _showUtilitiesPage
-                          ? UtilitiesPage(
-                              isWide: isWide,
-                              onBack: _closeProfile,
-                            )
+                          : _showWeatherPage
+                          ? WeatherPage(isWide: isWide, onBack: _closeProfile)
                           : _showSettingsPage
                           ? SettingsPage(
                               isWide: isWide,
@@ -241,7 +238,7 @@ class _ProfileSidebar extends StatefulWidget {
     required this.onToggle,
     required this.onHomeSelected,
     required this.onMessagesSelected,
-    required this.onUtilitiesSelected,
+    required this.onWeatherSelected,
     required this.onProfileSelected,
     required this.onSettingsSelected,
     required this.onAboutSelected,
@@ -252,7 +249,7 @@ class _ProfileSidebar extends StatefulWidget {
   final VoidCallback onToggle;
   final VoidCallback onHomeSelected;
   final VoidCallback onMessagesSelected;
-  final VoidCallback onUtilitiesSelected;
+  final VoidCallback onWeatherSelected;
   final VoidCallback onProfileSelected;
   final VoidCallback onSettingsSelected;
   final VoidCallback onAboutSelected;
@@ -265,7 +262,7 @@ class _ProfileSidebarState extends State<_ProfileSidebar> {
   bool _isProfileHovered = false;
   bool _isHomeHovered = false;
   bool _isMessagesHovered = false;
-  bool _isUtilitiesHovered = false;
+  bool _isWeatherHovered = false;
   bool _isAboutHovered = false;
   bool _isSettingsHovered = false;
 
@@ -430,14 +427,14 @@ class _ProfileSidebarState extends State<_ProfileSidebar> {
               8,
             ),
             child: MouseRegion(
-              onEnter: (_) => setState(() => _isUtilitiesHovered = true),
-              onExit: (_) => setState(() => _isUtilitiesHovered = false),
+              onEnter: (_) => setState(() => _isWeatherHovered = true),
+              onExit: (_) => setState(() => _isWeatherHovered = false),
               child: Tooltip(
-                message: 'Utilities',
+                message: 'Weather',
                 child: InkWell(
-                  key: const Key('sidebar-utilities'),
+                  key: const Key('sidebar-weather'),
                   borderRadius: BorderRadius.circular(16),
-                  onTap: widget.onUtilitiesSelected,
+                  onTap: widget.onWeatherSelected,
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 260),
                     curve: Curves.easeOutCubic,
@@ -446,7 +443,7 @@ class _ProfileSidebarState extends State<_ProfileSidebar> {
                       horizontal: widget.isCollapsed ? 8 : 14,
                     ),
                     decoration: BoxDecoration(
-                      color: _isUtilitiesHovered
+                      color: _isWeatherHovered
                           ? colors.primaryContainer.withValues(alpha: 0.8)
                           : colors.primaryContainer.withValues(alpha: 0.35),
                       borderRadius: BorderRadius.circular(16),
@@ -457,11 +454,11 @@ class _ProfileSidebarState extends State<_ProfileSidebar> {
                           : MainAxisAlignment.start,
                       children: [
                         AnimatedScale(
-                          scale: _isUtilitiesHovered ? 1.1 : 1,
+                          scale: _isWeatherHovered ? 1.1 : 1,
                           duration: const Duration(milliseconds: 260),
                           child: Icon(
-                            Icons.build_circle_outlined,
-                            color: _isUtilitiesHovered
+                            Icons.wb_cloudy_outlined,
+                            color: _isWeatherHovered
                                 ? colors.primary
                                 : colors.onSurfaceVariant,
                           ),
@@ -469,7 +466,7 @@ class _ProfileSidebarState extends State<_ProfileSidebar> {
                         if (!widget.isCollapsed) ...[
                           const SizedBox(width: 12),
                           Text(
-                            'Utilities',
+                            'Weather',
                             style: Theme.of(context).textTheme.titleSmall
                                 ?.copyWith(fontWeight: FontWeight.w600),
                           ),

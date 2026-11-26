@@ -5,6 +5,7 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   app_links
   file_saver
+  geolocator_windows
   media_kit_libs_windows_video
   url_launcher_windows
   media_kit_video
