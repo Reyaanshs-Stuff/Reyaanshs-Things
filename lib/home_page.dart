@@ -7,6 +7,7 @@ import 'messaging_page.dart';
 import 'profile_page.dart';
 import 'settings_page.dart';
 import 'supabase_service.dart';
+import 'utilities_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({
@@ -31,6 +32,7 @@ class _HomePageState extends State<HomePage> {
   bool _showProfilePage = false;
   bool _showAboutPage = false;
   bool _showMessagingPage = false;
+  bool _showUtilitiesPage = false;
   bool _showSettingsPage = false;
   final _profileService = SupabaseService();
 
@@ -67,6 +69,7 @@ class _HomePageState extends State<HomePage> {
       _showProfilePage = true;
       _showAboutPage = false;
       _showMessagingPage = false;
+      _showUtilitiesPage = false;
       _showSettingsPage = false;
     });
   }
@@ -76,6 +79,7 @@ class _HomePageState extends State<HomePage> {
       _showProfilePage = false;
       _showAboutPage = true;
       _showMessagingPage = false;
+      _showUtilitiesPage = false;
       _showSettingsPage = false;
     });
   }
@@ -85,6 +89,17 @@ class _HomePageState extends State<HomePage> {
       _showProfilePage = false;
       _showAboutPage = false;
       _showMessagingPage = true;
+      _showUtilitiesPage = false;
+      _showSettingsPage = false;
+    });
+  }
+
+  void _openUtilities() {
+    setState(() {
+      _showProfilePage = false;
+      _showAboutPage = false;
+      _showMessagingPage = false;
+      _showUtilitiesPage = true;
       _showSettingsPage = false;
     });
   }
@@ -94,6 +109,7 @@ class _HomePageState extends State<HomePage> {
       _showProfilePage = false;
       _showAboutPage = false;
       _showMessagingPage = false;
+      _showUtilitiesPage = false;
       _showSettingsPage = true;
     });
   }
@@ -103,6 +119,7 @@ class _HomePageState extends State<HomePage> {
       _showProfilePage = false;
       _showAboutPage = false;
       _showMessagingPage = false;
+      _showUtilitiesPage = false;
       _showSettingsPage = false;
     });
   }
@@ -131,6 +148,10 @@ class _HomePageState extends State<HomePage> {
                       onMessagesSelected: () {
                         Navigator.of(context).pop();
                         _openMessaging();
+                      },
+                      onUtilitiesSelected: () {
+                        Navigator.of(context).pop();
+                        _openUtilities();
                       },
                       onProfileSelected: () {
                         Navigator.of(context).pop();
@@ -162,6 +183,7 @@ class _HomePageState extends State<HomePage> {
                         onToggle: _toggleSidebar,
                         onHomeSelected: _closeProfile,
                         onMessagesSelected: _openMessaging,
+                        onUtilitiesSelected: _openUtilities,
                         onProfileSelected: _openProfile,
                         onSettingsSelected: _openSettings,
                         onAboutSelected: _openAbout,
@@ -181,6 +203,11 @@ class _HomePageState extends State<HomePage> {
                           : _showMessagingPage
                           ? MessagingPage(
                               profile: widget.profile,
+                              isWide: isWide,
+                              onBack: _closeProfile,
+                            )
+                          : _showUtilitiesPage
+                          ? UtilitiesPage(
                               isWide: isWide,
                               onBack: _closeProfile,
                             )
@@ -214,6 +241,7 @@ class _ProfileSidebar extends StatefulWidget {
     required this.onToggle,
     required this.onHomeSelected,
     required this.onMessagesSelected,
+    required this.onUtilitiesSelected,
     required this.onProfileSelected,
     required this.onSettingsSelected,
     required this.onAboutSelected,
@@ -224,6 +252,7 @@ class _ProfileSidebar extends StatefulWidget {
   final VoidCallback onToggle;
   final VoidCallback onHomeSelected;
   final VoidCallback onMessagesSelected;
+  final VoidCallback onUtilitiesSelected;
   final VoidCallback onProfileSelected;
   final VoidCallback onSettingsSelected;
   final VoidCallback onAboutSelected;
@@ -236,6 +265,7 @@ class _ProfileSidebarState extends State<_ProfileSidebar> {
   bool _isProfileHovered = false;
   bool _isHomeHovered = false;
   bool _isMessagesHovered = false;
+  bool _isUtilitiesHovered = false;
   bool _isAboutHovered = false;
   bool _isSettingsHovered = false;
 
@@ -381,6 +411,65 @@ class _ProfileSidebarState extends State<_ProfileSidebar> {
                           const SizedBox(width: 12),
                           Text(
                             'Messages',
+                            style: Theme.of(context).textTheme.titleSmall
+                                ?.copyWith(fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              widget.isCollapsed ? 8 : 16,
+              0,
+              widget.isCollapsed ? 8 : 16,
+              8,
+            ),
+            child: MouseRegion(
+              onEnter: (_) => setState(() => _isUtilitiesHovered = true),
+              onExit: (_) => setState(() => _isUtilitiesHovered = false),
+              child: Tooltip(
+                message: 'Utilities',
+                child: InkWell(
+                  key: const Key('sidebar-utilities'),
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: widget.onUtilitiesSelected,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 260),
+                    curve: Curves.easeOutCubic,
+                    height: 48,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: widget.isCollapsed ? 8 : 14,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _isUtilitiesHovered
+                          ? colors.primaryContainer.withValues(alpha: 0.8)
+                          : colors.primaryContainer.withValues(alpha: 0.35),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: widget.isCollapsed
+                          ? MainAxisAlignment.center
+                          : MainAxisAlignment.start,
+                      children: [
+                        AnimatedScale(
+                          scale: _isUtilitiesHovered ? 1.1 : 1,
+                          duration: const Duration(milliseconds: 260),
+                          child: Icon(
+                            Icons.build_circle_outlined,
+                            color: _isUtilitiesHovered
+                                ? colors.primary
+                                : colors.onSurfaceVariant,
+                          ),
+                        ),
+                        if (!widget.isCollapsed) ...[
+                          const SizedBox(width: 12),
+                          Text(
+                            'Utilities',
                             style: Theme.of(context).textTheme.titleSmall
                                 ?.copyWith(fontWeight: FontWeight.w600),
                           ),
